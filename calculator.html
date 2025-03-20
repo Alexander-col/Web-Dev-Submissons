@@ -1,0 +1,270 @@
+<html>
+  <head>
+    <title>Calculator</title>
+    <style>
+      body
+      {
+        background-color: purple;
+        font-family: "Comic Sans MS", cursive;
+      
+      }
+      .button {
+        width: 80px;
+        height: 40px;
+        background-color: #6969b3;
+        border: 0px;
+        color: #ffffffca;
+        border-radius: 6px;
+        box-shadow: 3px 5px 5px black;
+      }
+
+      button:hover {
+        background-color: #98c1d9;
+      }
+
+      button:active {
+        box-shadow: 2px 4px 4px black;
+      }
+
+      .flexContainer {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-evenly;
+        align-items: baseline;
+        width: 390px;
+        row-gap: 8px;
+      }
+
+      .displayContainer {
+        display: flex;
+        justify-content: flex-end;
+        width: 390px;
+      }
+
+      #display {
+        margin-right: 20px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Calculator</h1>
+    <div class="displayContainer">
+      <span id="display"></span>
+    </div>
+
+    <div class="flexContainer">
+      <button class="button number">7</button>
+      <button class="button number">8</button>
+      <button class="button number">9</button>
+      <button class="button operator">/</button>
+
+      <button class="button number">4</button>
+      <button class="button number">5</button>
+      <button class="button number">6</button>
+      <button class="button operator">*</button>
+
+      <button class="button number">1</button>
+      <button class="button number">2</button>
+      <button class="button number">3</button>
+      <button class="button operator">-</button>
+
+      <button class="button number">0</button>
+      <button class="button decimal">.</button>
+      <button class="button equals">=</button>
+      <button class="button operator">+</button>
+
+      <button class="button parenthesis">(</button>
+      <button class="button parenthesis">)</button>
+<!--Newly created button to clear expression-->
+      <button class="clear button">clear</button>
+    </div>
+
+    <script>
+      const numbersArr = Array.from(document.getElementsByClassName("number"));
+      const operatorsArr = Array.from(document.getElementsByClassName("operator"));
+      const parenthesisArr = Array.from(document.getElementsByClassName("parenthesis"));
+      const numberStrs = "0123456789".split("");
+
+      const data = {
+        displayString: "0",
+        appendStringNum: (newChar) => {
+          if (newChar === ".") {
+            data.displayString += newChar;
+          }
+
+          if (numberStrs.includes(newChar)) {
+            if (data.displayString === "0") {
+              data.displayString = "";
+            }
+            data.displayString += newChar;
+          }
+          data.updateDisplay();
+        },
+
+        appendStringOperator: (newChar) => {
+          if (numberStrs.includes(data.displayString.slice(-1)) || data.displayString.slice(-1) === ")") {
+            data.displayString += newChar;
+          }
+          data.updateDisplay();
+        },
+
+        appendStringParenthesis: (newChar) => {
+          if (newChar === ")") {
+            if (data.displayString.split("(").length <= data.displayString.split(")").length) {
+              //if there are not enough open parenthesis to add a closing parenthesis terminate early
+              return;
+            }
+            if (operatorsArr.map((operator) => operator.innerText).includes(data.displayString[data.displayString.length - 1])) {
+              //early termination for adding parenthesis after operator
+              return;
+            }
+          }
+          if (data.displayString === "0") {
+            data.displayString = "";
+            data.displayString += newChar;
+            return;
+          }
+
+          data.displayString += newChar;
+
+          data.updateDisplay();
+        },
+        updateDisplay: () => {
+          const display = document.getElementById("display");
+          display.innerText = data.displayString;
+        },
+      };
+
+      const display = document.getElementById("display");
+      display.innerText = data.displayString;
+
+      numbersArr.map((elem, i) => {
+        elem.addEventListener("click", (evt) => {
+          data.appendStringNum(elem.innerText);
+        });
+      });
+
+      operatorsArr.map((elem, i) => {
+        elem.addEventListener("click", (evt) => {
+          data.appendStringOperator(elem.innerText);
+        });
+      });
+
+      parenthesisArr.map((elem, i) => {
+        elem.addEventListener("click", (evt) => {
+          data.appendStringParenthesis(elem.innerText);
+        });
+      });
+
+      const equalsButton = document.querySelector(".equals");
+      const clearButton = document.querySelector(".clear");
+
+  //rules of opperation
+  const precedence = 
+  {
+    "*": 2, "/": 2, "+": 1, "-": 1
+  };
+
+  // In-fix Post-fix implemntation
+  function infixToPostfix(expression) 
+    {
+      let output = []; //creating block  for output
+      let operators = [];  //creating block for operators
+      let keys = expression.match(/\d+(\.\d+)?|[()+\-*/]/g); //regex expression for parsing
+
+    keys.forEach(key => //key checks for perentheses to be checks first to follow operations in stack
+      {
+        if (!isNaN(key)) 
+      {
+      output.push(key);
+        } else if (key === "(") 
+      {
+        operators.push(key);
+      } else if (key === ")") 
+      {
+        while (operators.length && operators[operators.length - 1] !== "(") 
+      {
+        output.push(operators.pop());
+      }
+      operators.pop();
+    } else 
+    {
+      while(operators.length && precedence[operators[operators.length - 1]] >= precedence[key]) 
+      {
+        output.push(operators.pop());
+      }
+      operators.push(key);
+    }
+  });
+
+  while (operators.length) 
+  {
+    output.push(operators.pop());
+  }
+  return output;
+}
+
+// evluate to understand and evaluate post-fix expression
+function evaluatePostfix(postfixExp) 
+{
+  let stack = [];
+  postfixExp.forEach(key => 
+  {
+    if (!isNaN(key)) 
+    {
+      stack.push(parseFloat(key));
+    } else 
+    {
+      let b = stack.pop();
+      let a = stack.pop();
+      switch (key) 
+      //checking for all cases of operator and correct expression 
+      {
+        case "+":
+          stack.push(a + b);
+          break;
+        case "-":
+          stack.push(a - b);
+          break;
+        case "*":
+          stack.push(a * b);
+          break;
+        case "/":
+          stack.push(a / b);
+          break;
+      }
+    }
+  });
+  return stack[0];
+}
+
+  // "=" operator button evaluatinon
+  equalsButton.addEventListener("click", () => 
+  {
+    try 
+  {
+    let postfixExp = infixToPostfix(data.displayString);
+    let result = evaluatePostfix(postfixExp);
+    data.displayString = result.toString();
+    data.updateDisplay();
+  } catch (error) 
+  {
+
+    data.displayString = "Error";
+    data.updateDisplay();
+  }
+});
+
+// Clear display when "clear" is clicked
+    clearButton.addEventListener("click", () => 
+    {
+    data.displayString = "0";
+    data.updateDisplay();
+
+
+    });
+    </script>
+  </body>
+</html>
